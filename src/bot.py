@@ -1,3 +1,7 @@
+# bot.py
+# Main source code of the bot
+# Copyright 2021 by Mikhail Korobkov, Kamil Muradov
+
 import logging, random, datetime, pytz, os, requests, openpyxl, time
 from openpyxl.utils.indexed_list import IndexedList
 

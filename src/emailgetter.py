@@ -1,3 +1,7 @@
+# emailgetter.py
+# A module with a class which encapsulates access to email with help of IMAP
+# Copyright 2021 by Mikhail Korobkov
+
 import imaplib #pip install python-imap
 import email #уже есть в стандартном наборе
 import os, string, random, re, base64, quopri
