@@ -2,7 +2,7 @@
 # Main source code of the bot
 # Copyright 2021 by Mikhail Korobkov, Kamil Muradov
 
-import logging, random, datetime, pytz, os, requests, openpyxl, time
+import logging, random, datetime, pytz, os, requests, openpyxl, time, sys
 from openpyxl.utils.indexed_list import IndexedList
 
 from collections.abc import Iterable
@@ -31,6 +31,7 @@ from telegram.ext import (
 )
 
 logging.basicConfig (
+    stream=sys.stdout,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
 )
 logger = logging.getLogger(__name__)
@@ -73,12 +74,12 @@ def poll(context: CallbackContext) -> None:
     if "poll" not in context.bot_data.keys():
         context.bot_data["poll"] = {}
     context.bot_data["poll"].update(payload)
-    
-    context.job_queue.run_once (
+    print(f"ADDING JOB CLOSE_POLL, WILL BE EXECUTED AT")
+    print(context.job_queue.run_once (
             callback=close_poll, 
             when=7200, 
             context=payload,
-    )
+    ).next_t)
 
 def update_student_vote(student_id: int, option_id: int, context: CallbackContext) -> None:
     """
@@ -331,7 +332,7 @@ def enable_schedule_distr(update: Update, context: CallbackContext) -> None:
     try:
         delay = int(context.args[0]) 
     except (IndexError, ValueError):
-        update.message.reply_text("Неверное значение минут! Для задержки в 0 минут, напишите /toggle_schedule 0")
+        update.message.reply_text("Неверное значение минут! Для задержки в 0 минут, напишите /enable_schedule 0")
         return
 
     if delay<0 or delay>269:
@@ -525,11 +526,12 @@ def set_time_table_jobs (context: CallbackContext) -> None:
     hours, minutes = map(int, time_end.split(":"))
     for user_id in context.bot_data["enabled_schedule_distribution"].keys():
         delayed_time = datetime.datetime.combine(datetime.datetime.now().date(), datetime.time(hours-3, minutes, 00, 000000)) + datetime.timedelta(minutes=context.bot_data["enabled_schedule_distribution"][user_id])
-        context.job_queue.run_once (
+        print(f"ADDING JOB SET_TIME_TABLE FOR USER {user_id}, will be executed on")
+        print(context.job_queue.run_once (
             callback=send_time_table,
             when=delayed_time,
             context=user_id
-        )
+        ).next_t)
 
 def send_time_table (context: CallbackContext) -> None:
     """Отправка сообщения с расписанием"""
@@ -548,7 +550,7 @@ def send_time_table (context: CallbackContext) -> None:
             continue
         lesson_type = str(i['type']) if i['type'] != None else ""
         classroom = str(i['classroom']) 
-        time_beg, time_end= context.bot_data["timetable_list"][count+1]
+        time_beg, time_end= context.bot_data["timetable_list"][count]
         if classroom == "None":
             text+=f"{count+1}) {name} ({lesson_type.upper()}) c {time_beg} до {time_end}\n"
             continue
@@ -564,7 +566,7 @@ def send_time_table (context: CallbackContext) -> None:
         chat_id=user_id,
         text=text
     )
-        
+
 def week_even () -> int: 
     date = datetime.date.today()
     week = int(date.isocalendar()[1]) - 5
@@ -613,11 +615,12 @@ def time_for_poll (context: CallbackContext) -> None:
 
     hours, minutes = map(int, time_beg.split(":"))    
     poll_time = datetime.datetime.combine(datetime.datetime.now().date(), datetime.time(hours-3, minutes, 00, 000000)) - datetime.timedelta(minutes=30)
-    context.job_queue.run_once (
+    print(f"ADDING JOB POLL, WILL BE EXECUTED AT")
+    print(context.job_queue.run_once (
         callback=poll,
         when=poll_time,
         context=context.bot_data["chat_id"]
-    )
+    ).next_t)
 
 def main() -> None:
     updater = Updater("YOUR BOT TOKEN HERE", use_context=True)
