@@ -500,6 +500,17 @@ def set_cfg(dispatcher: Dispatcher) -> None:
         days=days,
         context=dispatcher.bot_data["chat_id"],
     )
+    if datetime.datetime.now().time() > datetime.time(hour=5, minute=0): #т.к utc0
+        dispatcher.job_queue.run_once(
+            callback=set_time_table_jobs,
+            when=1,
+            context=dispatcher.bot_data["chat_id"]
+        )
+        dispatcher.job_queue.run_once(
+            callback=time_for_poll,
+            when=1,
+            context=dispatcher.bot_data["chat_id"]
+        )
 
 def set_time_table_jobs (context: CallbackContext) -> None:
     
